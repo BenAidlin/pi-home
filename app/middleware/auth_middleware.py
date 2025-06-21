@@ -1,6 +1,6 @@
 import jwt
-import datetime as dt
-from fastapi import HTTPException, Request, logger
+from fastapi.responses import JSONResponse
+from fastapi import Request, logger
 from decouple import config
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -25,7 +25,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             if user.email is None or user.email not in allowed_users:
                 logger.logger.info("User tried making request. Unauthorized.", extra={"email": user.email})
                 return False
-            
+
             return True
         except Exception as e:
             logger.logger.info("User tried making request. Unauthorized.", extra={"error": e})
@@ -41,6 +41,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Check if the token is authorized
         if not await self._is_authorized(token):
-            raise HTTPException(status_code=401, detail="Unauthorized")
+            return JSONResponse(content="User is unaothorized", status_code=401)
 
         return await call_next(request)
