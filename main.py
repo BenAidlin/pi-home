@@ -1,7 +1,7 @@
 from httpx import AsyncClient
 from fastapi.openapi.docs import get_swagger_ui_html
 from decouple import config
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, logger
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
 
@@ -9,7 +9,7 @@ from app.middleware.auth_middleware import AuthMiddleware
 from app.routers.sys_info_router import sys_info_router
 from app.routers.video_streaming import video_router
 from app.utils.token_utils import create_access_token
-
+from app.utils.html_utils import video_stream_iframe_html
 
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
@@ -27,7 +27,6 @@ app = FastAPI()
 app.include_router(sys_info_router)
 app.include_router(video_router, prefix="/video-stream")
 app.add_middleware(AuthMiddleware)
-camera = None
 
 
 @app.get("/", include_in_schema=False)
@@ -96,25 +95,15 @@ async def google_auth_callback(code: str):
 async def custom_swagger_ui_html():
     # Get default Swagger UI HTML as a string
     swagger_html = get_swagger_ui_html(
-        openapi_url=app.openapi_url,
-        title="Custom Swagger UI"
-    ).body.decode("utf-8")  # decode bytes to string
-
-    iframe_html = """
-        <div style="margin-top: 20px; text-align:center;">
-            <h2>Live Camera Stream</h2>
-            <iframe
-                width="640"
-                height="480"
-                src="/video-stream"
-                frameborder="0"
-                allowfullscreen>
-            </iframe>
-        </div>
-    """
+        openapi_url=app.openapi_url, title="Custom Swagger UI"
+    ).body.decode(
+        "utf-8"
+    )  # decode bytes to string
 
     # Inject the iframe right before </body> tag
-    modified_html = swagger_html.replace("</body>", iframe_html + "</body>")
+    modified_html = swagger_html.replace(
+        "</body>", video_stream_iframe_html + "</body>"
+    )
 
     # Return the modified HTML as response
     return HTMLResponse(content=modified_html, status_code=200)

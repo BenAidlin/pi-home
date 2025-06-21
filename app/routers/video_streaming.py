@@ -1,27 +1,15 @@
 from fastapi import APIRouter
 import cv2
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from decouple import config
 
 video_router = APIRouter()
 REDIRECT_URI = config("REDIRECT_URI")
-camera = None
-@video_router.post("/enable")
-async def enable_video_steam():
-    global camera
-    camera = cv2.VideoCapture(0)
-    return RedirectResponse(str(REDIRECT_URI))
-
-
-@video_router.post("/disable")
-async def disable_video_steam():
-    global camera
-    camera = None
-    return RedirectResponse(str(REDIRECT_URI))
 
 
 @video_router.get("/", include_in_schema=False)
 async def video_stream():
+    camera = cv2.VideoCapture(0)
     def generate_frames():
         if not camera:
             yield "Enable video stream to view camera data"
